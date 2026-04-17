@@ -1,11 +1,11 @@
 services:
   - type: web
     name: lani-backend
-    runtime: docker
-    dockerfilePath: ./services/orchestrator/Dockerfile
-    dockerContext: ./services/orchestrator
-    plan: starter  # $7/mėn — visada veikia (free tier užmiega)
-    region: frankfurt  # Arčiausiai Lietuvos
+    runtime: python
+    region: frankfurt
+    plan: starter
+    buildCommand: pip install -r services/orchestrator/requirements.txt
+    startCommand: cd services/orchestrator && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: APP_ENV
         value: production
