@@ -30,3 +30,9 @@ Cargo.lock
 .idea/
 .vscode/settings.json
 *.swp
+
+# Personal data / large files
+services/orchestrator/data/
+services/orchestrator/assistant.db.bak*
+services/orchestrator/backend.log
+services/orchestrator/test_nova.mp3
