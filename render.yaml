@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: lani-backend
+    runtime: docker
+    dockerfilePath: ./services/orchestrator/Dockerfile
+    dockerContext: ./services/orchestrator
+    plan: starter  # $7/mėn — visada veikia (free tier užmiega)
+    region: frankfurt  # Arčiausiai Lietuvos
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 8000
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:///./data/assistant.db
+      # Secrets — įrašyti ranka Render Dashboard
+      - key: SECRET_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_SUCCESS_URL
+        value: https://vilca.site/tokens?payment=success
+      - key: STRIPE_CANCEL_URL
+        value: https://vilca.site/tokens?payment=cancelled
+      - key: CORS_ORIGINS
+        value: '["tauri://localhost","https://tauri.localhost","http://localhost:1420"]'
+    disk:
+      name: lani-data
+      mountPath: /app/data
+      sizeGB: 1

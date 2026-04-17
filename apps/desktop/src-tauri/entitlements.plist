@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Mikrofonas: būtina getUserMedia (WebRTC) veikimui -->
+  <key>com.apple.security.device.microphone</key>
+  <true/>
+  <!-- Audio input įrenginiai -->
+  <key>com.apple.security.device.audio-input</key>
+  <true/>
+  <!-- Sandbox (reikalinga App Store; development – galima išjungti) -->
+  <key>com.apple.security.app-sandbox</key>
+  <false/>
+  <!-- Network klientas – backend komunikacijai -->
+  <key>com.apple.security.network.client</key>
+  <true/>
+</dict>
+</plist>

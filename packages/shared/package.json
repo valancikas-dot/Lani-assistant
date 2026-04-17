@@ -1,0 +1,7 @@
+{
+  "name": "@personal-ai/shared",
+  "version": "0.1.0",
+  "description": "Shared type contracts",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}

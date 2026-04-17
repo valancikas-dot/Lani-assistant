@@ -1,0 +1,32 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+dist/
+*.egg-info/
+.pytest_cache/
+*.db
+*.sqlite
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+
+# Tauri / Rust
+target/
+Cargo.lock
+
+# Environment
+.env
+
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/settings.json
+*.swp

@@ -1,0 +1,127 @@
+"""
+Chart generation tools – create bar, line, and pie charts as PNG files.
+
+Uses matplotlib (non-interactive Agg backend so no display needed).
+Saves to ~/Desktop by default.
+"""
+
+# This module provides tools for creating and saving charts as PNG images.
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any, Dict, List
+
+from app.schemas.commands import ToolResult
+from app.tools.base import BaseTool
+
+
+def _safe_path(path: str, title: str, ext: str = "png") -> str:
+    """Expand ~ and provide a Desktop default."""
+    if path:
+        return str(Path(path).expanduser())
+    safe_title = "".join(c if c.isalnum() or c in " _-" else "_" for c in title)[:40]
+    return str(Path(f"~/Desktop/{safe_title}.{ext}").expanduser())
+
+
+class CreateChartTool(BaseTool):
+    name = "create_chart"
+    description = (
+        "Create a chart (bar, line, or pie) from data and save it as a PNG image on the Desktop. "
+        "Provide labels and values as lists."
+    )
+    requires_approval = False
+    parameters = [
+        {"name": "chart_type", "description": "Type of chart: 'bar', 'line', or 'pie'", "required": True},
+        {"name": "title", "description": "Chart title", "required": True},
+        {"name": "labels", "description": "List of category labels, e.g. ['Jan', 'Feb', 'Mar']", "required": True},
+        {"name": "values", "description": "List of numeric values corresponding to labels, e.g. [100, 200, 150]", "required": True},
+        {"name": "x_label", "description": "X-axis label (optional)", "required": False},
+        {"name": "y_label", "description": "Y-axis label (optional)", "required": False},
+        {"name": "output_path", "description": "Save path for PNG. Defaults to ~/Desktop/<title>.png", "required": False},
+    ]
+
+    async def run(self, params: Dict[str, Any]) -> ToolResult:
+        chart_type = str(params.get("chart_type", "bar")).lower()
+        title = str(params.get("title", "Chart"))
+        labels_raw = params.get("labels", [])
+        values_raw = params.get("values", [])
+        x_label = str(params.get("x_label", ""))
+        y_label = str(params.get("y_label", ""))
+        output_path = _safe_path(params.get("output_path", ""), title, "png")
+
+        # Parse if strings were sent as JSON
+        if isinstance(labels_raw, str):
+            try:
+                labels_raw = json.loads(labels_raw)
+            except Exception:
+                labels_raw = [s.strip() for s in labels_raw.split(",")]
+        if isinstance(values_raw, str):
+            try:
+                values_raw = json.loads(values_raw)
+            except Exception:
+                values_raw = [float(s.strip()) for s in values_raw.split(",")]
+
+        labels: List[str] = [str(l) for l in labels_raw]
+        try:
+            values: List[float] = [float(v) for v in values_raw]
+        except (ValueError, TypeError) as exc:
+            return ToolResult(tool_name=self.name, status="error", message=f"Invalid values: {exc}")
+
+        if not labels or not values:
+            return ToolResult(tool_name=self.name, status="error", message="'labels' and 'values' are required.")
+        if len(labels) != len(values):
+            return ToolResult(tool_name=self.name, status="error", message=f"labels ({len(labels)}) and values ({len(values)}) must have the same length.")
+
+        try:
+            import matplotlib
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
+
+            fig, ax = plt.subplots(figsize=(10, 6))
+            fig.patch.set_facecolor("#1a1a2e")
+            ax.set_facecolor("#16213e")
+
+            colors = ["#6366f1", "#22d3ee", "#f59e0b", "#10b981", "#ef4444", "#a855f7", "#f97316"]
+
+            if chart_type == "bar":
+                bars = ax.bar(labels, values, color=colors[:len(values)])
+                # Add value labels on bars
+                for bar, val in zip(bars, values):
+                    ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + max(values) * 0.01,
+                            f"{val:g}", ha="center", va="bottom", color="white", fontsize=9)
+            elif chart_type == "line":
+                ax.plot(labels, values, marker="o", color="#6366f1", linewidth=2.5, markersize=7)
+                ax.fill_between(range(len(labels)), values, alpha=0.15, color="#6366f1")
+            elif chart_type == "pie":
+                ax.pie(values, labels=labels, colors=colors[:len(values)],
+                       autopct="%1.1f%%", textprops={"color": "white"})
+            else:
+                return ToolResult(tool_name=self.name, status="error", message=f"Unknown chart_type '{chart_type}'. Use: bar, line, pie.")
+
+            ax.set_title(title, color="white", fontsize=14, fontweight="bold", pad=15)
+            if x_label and chart_type != "pie":
+                ax.set_xlabel(x_label, color="#9ca3af")
+            if y_label and chart_type != "pie":
+                ax.set_ylabel(y_label, color="#9ca3af")
+            if chart_type != "pie":
+                ax.tick_params(colors="white")
+                ax.spines["bottom"].set_color("#374151")
+                ax.spines["left"].set_color("#374151")
+                ax.spines["top"].set_visible(False)
+                ax.spines["right"].set_visible(False)
+
+            plt.tight_layout()
+            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(output_path, dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
+            plt.close(fig)
+
+            return ToolResult(
+                tool_name=self.name,
+                status="success",
+                message=f"Chart '{title}' saved to '{output_path}'.",
+                data={"output_path": output_path, "chart_type": chart_type, "data_points": len(values)},
+            )
+        except Exception as exc:
+            return ToolResult(tool_name=self.name, status="error", message=str(exc))
